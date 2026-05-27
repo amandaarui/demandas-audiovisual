@@ -123,7 +123,10 @@
     }
     .kanban-card .card-title { font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
     .kanban-card .card-meta { color: var(--muted); font-size: 0.73rem; }
-    .kanban-card .card-date { margin-top: 4px; font-size: 0.72rem; color: var(--accent); }
+    .kanban-card .card-date { margin-top: 4px; font-size: 0.72rem; color: var(--muted); }
+    .kanban-card .card-date.overdue { color: #c0392b; font-weight: 700; }
+    .kanban-card.overdue-card { border-left: 3px solid #c0392b; background: #fff5f5; }
+    .overdue-badge { display: inline-block; background: #c0392b; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
 
     .empty-state { color: var(--muted); font-size: 0.78rem; text-align: center; padding: 12px; }
 
@@ -202,6 +205,7 @@
       <div class="kpi"><div class="value" id="kpi-andamento">0</div><div class="label">Em Andamento</div></div>
       <div class="kpi"><div class="value" id="kpi-aprovado">0</div><div class="label">Aprovados</div></div>
       <div class="kpi"><div class="value" id="kpi-blocked">0</div><div class="label">Bloqueados</div></div>
+      <div class="kpi" style="border-color:#c0392b"><div class="value" id="kpi-atrasado" style="color:#c0392b">0</div><div class="label">Atrasados</div></div>
     </div>
 
     <div class="charts">
@@ -336,12 +340,20 @@ function render() {
   const data = getFiltered();
 
   // KPIs
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const naoFinalizados = ['Aprovado','Cancelado'];
   document.getElementById('kpi-total').textContent = data.length;
-  const emAndamento = ['Produção','Em Edição','Em Revisão','Para Edição','Para aprovação','Freela'];
+  const emAndamento = ['Produção','Em Edição','Em edição','Em Revisão','Para Edição','Para aprovação','Freela'];
   document.getElementById('kpi-andamento').textContent = data.filter(r => emAndamento.includes((r['Etapa']||'').trim())).length;
   document.getElementById('kpi-aprovado').textContent  = data.filter(r => (r['Etapa']||'').trim() === 'Aprovado').length;
   const bloqueados = ['Blocked','Produção Blocked','Cancelado'];
   document.getElementById('kpi-blocked').textContent   = data.filter(r => bloqueados.includes((r['Etapa']||'').trim())).length;
+  document.getElementById('kpi-atrasado').textContent  = data.filter(r => {
+    if (naoFinalizados.includes((r['Etapa']||'').trim())) return false;
+    if (!r._date) return false;
+    const d = new Date(r._date); d.setHours(0,0,0,0);
+    return d < hoje;
+  }).length;
 
   // Gráfico: por área
   const byArea = countBy(data, 'Área Demandadora');
@@ -378,13 +390,19 @@ function render() {
       <div class="kanban-col-body">
         ${cards.length === 0
           ? '<div class="empty-state">Nenhuma demanda</div>'
-          : cards.map(c => `
-              <div class="kanban-card">
-                <div class="card-title">${c['Demanda'] || '—'}</div>
+          : cards.map(c => {
+              const etapaFinal = naoFinalizados.includes((c['Etapa']||'').trim());
+              const atrasado = !etapaFinal && c._date && (() => { const d = new Date(c._date); d.setHours(0,0,0,0); return d < hoje; })();
+              const criacao = c['Criado em'] ? parseDate(c['Criado em']) : null;
+              return `
+              <div class="kanban-card${atrasado ? ' overdue-card' : ''}">
+                <div class="card-title">${c['Demanda'] || '—'}${atrasado ? '<span class="overdue-badge">ATRASADO</span>' : ''}</div>
                 <div class="card-meta">${(c['DRI Audiovisual']||'').trim()}</div>
                 <div class="card-meta">${(c['Área Demandadora']||'').trim()}</div>
-                ${c._date ? `<div class="card-date">Entrega: ${fmt(c._date)}</div>` : ''}
-              </div>`).join('')}
+                ${criacao ? `<div class="card-date">Criado: ${fmt(criacao)}</div>` : ''}
+                ${c._date ? `<div class="card-date${atrasado ? ' overdue' : ''}">Entrega: ${fmt(c._date)}${atrasado ? ' ⚠️' : ''}</div>` : ''}
+              </div>`;
+            }).join('')}
       </div>`;
     kanban.appendChild(col);
   });
