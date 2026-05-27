@@ -161,6 +161,10 @@
 
 <div class="filters">
   <div>
+    <label>Ano</label>
+    <select id="filter-year"><option value="">Todos</option></select>
+  </div>
+  <div>
     <label>Mês</label>
     <select id="filter-month"><option value="">Todos</option></select>
   </div>
@@ -251,6 +255,16 @@ function monthLabel(date) {
   return date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
 }
 
+function yearLabel(date) {
+  if (!date) return 'Sem data';
+  return String(date.getFullYear());
+}
+
+function monthOnlyLabel(date) {
+  if (!date) return 'Sem data';
+  return date.toLocaleDateString('pt-BR', { month: 'long' });
+}
+
 function countBy(arr, key) {
   return arr.reduce((acc, row) => {
     const v = (row[key] || 'Não informado').trim();
@@ -272,12 +286,14 @@ function populateFilter(selectId, values) {
 }
 
 function getFiltered() {
+  const year  = document.getElementById('filter-year').value;
   const month = document.getElementById('filter-month').value;
   const dri   = document.getElementById('filter-dri').value;
   const area  = document.getElementById('filter-area').value;
   const etapa = document.getElementById('filter-etapa').value;
   return allData.filter(row => {
-    if (month && monthLabel(row._date) !== month) return false;
+    if (year  && yearLabel(row._date) !== year) return false;
+    if (month && monthOnlyLabel(row._date) !== month) return false;
     if (dri   && (row['DRI Audiovisual']  || '').trim() !== dri)   return false;
     if (area  && (row['Área Demandadora'] || '').trim() !== area)  return false;
     if (etapa && (row['Etapa']            || '').trim() !== etapa) return false;
@@ -380,7 +396,8 @@ function processCSV(results) {
     .filter(r => r['Demanda'] && r['Demanda'].trim())
     .map(r => ({ ...r, _date: parseDate(r['Data Entrega']) }));
 
-  populateFilter('filter-month', allData.map(r => monthLabel(r._date)));
+  populateFilter('filter-year',  allData.map(r => yearLabel(r._date)));
+  populateFilter('filter-month', allData.map(r => monthOnlyLabel(r._date)));
   populateFilter('filter-dri',   allData.map(r => (r['DRI Audiovisual']||'').trim()));
   populateFilter('filter-area',  allData.map(r => (r['Área Demandadora']||'').trim()));
   populateFilter('filter-etapa', allData.map(r => (r['Etapa']||'').trim()));
@@ -404,7 +421,7 @@ fetch('dados.csv')
 
 document.getElementById('csv-upload').addEventListener('change', e => handleFile(e.target.files[0]));
 document.getElementById('csv-upload2').addEventListener('change', e => handleFile(e.target.files[0]));
-['filter-month','filter-dri','filter-area','filter-etapa'].forEach(id =>
+['filter-year','filter-month','filter-dri','filter-area','filter-etapa'].forEach(id =>
   document.getElementById(id).addEventListener('change', render)
 );
 </script>
