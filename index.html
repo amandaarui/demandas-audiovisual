@@ -219,7 +219,7 @@
 <script>
 const ETAPAS_ORDER = [
   'Backlog','Produção','Produção Blocked','Blocked','Freela',
-  'Para Edição','Em Edição','Em Revisão','Para aprovação','Aprovado','Cancelado'
+  'Para Edição','Em Edição','Em edição','Em Revisão','Para aprovação','Aprovado','Cancelado'
 ];
 
 const ETAPA_COLORS = {
@@ -394,7 +394,14 @@ function processCSV(results) {
   if (!results.data || results.data.length < 2) { alert('CSV vazio ou inválido.'); return; }
   allData = results.data
     .filter(r => r['Demanda'] && r['Demanda'].trim())
-    .map(r => ({ ...r, _date: parseDate(r['Data Entrega']) }));
+    .map(r => {
+      // Normaliza todos os campos de texto: remove espaços extras e caracteres invisíveis
+      const cleaned = {};
+      Object.keys(r).forEach(k => {
+        cleaned[k.trim()] = typeof r[k] === 'string' ? r[k].trim().replace(/\u00a0/g, ' ') : r[k];
+      });
+      return { ...cleaned, _date: parseDate(cleaned['Data Entrega']) };
+    });
 
   populateFilter('filter-year',  allData.map(r => yearLabel(r._date)));
   populateFilter('filter-month', allData.map(r => monthOnlyLabel(r._date)));
