@@ -245,6 +245,13 @@ let charts = {};
 
 function parseDate(str) {
   if (!str) return null;
+  str = str.trim();
+  // Formato DD/MM/YYYY (ex: 09/10/2024)
+  const dmyMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmyMatch) {
+    return new Date(parseInt(dmyMatch[3]), parseInt(dmyMatch[2]) - 1, parseInt(dmyMatch[1]));
+  }
+  // Formato "Month DD, YYYY" (ex: July 25, 2024)
   const d = new Date(str);
   return isNaN(d) ? null : d;
 }
