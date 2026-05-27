@@ -403,6 +403,10 @@ function processCSV(results) {
       return { ...cleaned, _date: parseDate(cleaned['Data Entrega']) };
     });
 
+  // DEBUG: mostra valores únicos da coluna Etapa no console
+  const etapasUnicas = [...new Set(allData.map(r => r['Etapa']))];
+  console.log('Etapas encontradas no CSV:', JSON.stringify(etapasUnicas));
+
   populateFilter('filter-year',  allData.map(r => yearLabel(r._date)));
   populateFilter('filter-month', allData.map(r => monthOnlyLabel(r._date)));
   populateFilter('filter-dri',   allData.map(r => (r['DRI Audiovisual']||'').trim()));
